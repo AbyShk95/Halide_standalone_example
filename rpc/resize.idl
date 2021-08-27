@@ -1,0 +1,10 @@
+// All the Interfacing Functions between Host and Hexagon should have the prototype declared here 
+// IDL will generate the necessary Skel and Stub Files
+// This isolates Hexagon and Host code and simplifies compilation
+#include "AEEStdDef.idl"
+#include "remote.idl"
+
+interface resize
+{
+  long dspHalide_run(in long iterations, rout unsigned long avg_time);
+};

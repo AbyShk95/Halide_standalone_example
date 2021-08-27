@@ -1,0 +1,11 @@
+result.png
+.vscode/
+dsp/*.generator.h
+dsp/*.o
+generator/*_generator
+rpc/*.so
+rpc/*.c
+rpc/*.h
+resize_android
+dsp/generated
+*.png
