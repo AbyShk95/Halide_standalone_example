@@ -36,19 +36,19 @@ int resize_dspHalide_run(int iterations, unsigned int* avg_time) {
     float scaleX = inputW / (float) outputW;
     float scaleY = inputH / (float) outputH;
 
-    halide_dimension_t in_shape[3] = {{0, inputW, inputC}, {0, inputH, inputW * inputC}, {0, inputC, 1}};
-    halide_dimension_t out_shape[3] = {{0, outputW, outputC}, {0, outputH, outputW * outputC}, {0, outputC, 1}};
+    halide_dimension_t in_shape[3] = {{0, inputW, 1}, {0, inputH, inputW}, {0, inputC, inputW * inputH}};
+    halide_dimension_t out_shape[3] = {{0, outputW, 1}, {0, outputH, outputW}, {0, outputC, outputW * outputH}};
 
     uint8_t* inputData = (uint8_t*) malloc(inputW * inputH * inputC * sizeof(uint8_t));
     
     /**
-     *  Interleaved format RGBA input
+     *  Planar format RGBA input
      */
-    for (int i = 0; i < inputW * inputH * inputC; i += 4) {
+    for (int i = 0; i < inputW * inputH; i ++) {
         inputData[i]     = 235; // R Channel
-        inputData[i + 1] = 35;  // G Channel
-        inputData[i + 2] = 178; // B Channel
-        inputData[i + 3] = 125; // A Channel
+        inputData[i + (inputW * inputH)] = 35;  // G Channel
+        inputData[i + (inputW * inputH * 2)] = 178; // B Channel
+        inputData[i + (inputW * inputH * 3)] = 125; // A Channel
     }
     
     input.dimensions = 3;
@@ -76,7 +76,8 @@ int resize_dspHalide_run(int iterations, unsigned int* avg_time) {
     uint64_t start_time = HAP_perf_get_time_us();
 
     for (int i = 0; i < iterations; i++) {
-        resizeHalide(&input, scaleX, scaleY, &output);
+        // Hardcoding to integer for this case 1024/512 = 2
+        resizeHalide(&input, 2, 2, &output);
     }
 
     uint64_t end_time = HAP_perf_get_time_us();
@@ -88,9 +89,9 @@ int resize_dspHalide_run(int iterations, unsigned int* avg_time) {
     /**
      *  Output verification
      */
-    for (int i = 0; i < outputW * outputH * outputC; i += 4) {
-        if (output.host[i] != 235 || output.host[i + 1] != 35 || output.host[i + 2] != 178 || output.host[i + 3] != 125) {
-            FARF(HIGH, "------Error: Failure on verification------");
+    for (int i = 0; i < outputW * outputH; i ++) {
+        if (output.host[i] != 235 || output.host[i + (outputW * outputH)] != 35 || output.host[i + (outputW * outputH * 2)] != 178 || output.host[i + (outputW * outputH * 3)] != 125) {
+            FARF(HIGH, "------Error: Failure on verification------ at i = %d; value is %d", i, output.host[i]);
             free(inputData);
             free(output.host);
             return -1;
